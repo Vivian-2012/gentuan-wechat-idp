@@ -8,9 +8,22 @@
 ## 结构
 
 ```
-docs/     静态前端（可另部署到 GitHub Pages / Cloudflare Pages）
+docs/   静态前端（GitHub Pages 源目录 /docs）
 be/     Cloudflare Worker：微信 OAuth + 签发 Supabase 会话
+db/     Postgres 表结构（Supabase SQL Editor 执行 schema.sql）
 ```
+
+## 数据库（Supabase）
+
+建议与现站**同一 Supabase 项目**，执行 `db/schema.sql`：
+
+| 表 / 函数 | 作用 |
+|-----------|------|
+| `wechat_identities` | openid ↔ `auth.users` 映射 |
+| `wechat_admin_allowlist` | 管理员白名单 |
+| `is_wechat_admin()` | 当前用户是否管理员 |
+
+管理员也可用环境变量 `ADMIN_OPENIDS`（与表白名单取并集）。
 
 ## 登录流程
 

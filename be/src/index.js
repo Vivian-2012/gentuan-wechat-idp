@@ -9,7 +9,7 @@
 
 import { randomState, signState, verifyState } from './crypto.js';
 import { buildQrConnectUrl, exchangeCodeForUser } from './wechat.js';
-import { createSupabaseSessionForWechat, mockLocalSession } from './supabase.js';
+import { createSupabaseSessionForWechat, mockLocalSession, resolveIsAdmin } from './supabase.js';
 
 function json(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), {
@@ -28,19 +28,6 @@ function html(body, status = 200) {
     status,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
-}
-
-function isAdminOpenId(env, profile) {
-  const raw = String(env.ADMIN_OPENIDS || '')
-    .split(/[,;\s]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!raw.length) {
-    // 未配置白名单时：MOCK 模式下默认管理员，方便本地调试
-    return String(env.MOCK_WECHAT || '') === '1';
-  }
-  const ids = new Set(raw);
-  return ids.has(profile.openid) || (profile.unionid && ids.has(profile.unionid));
 }
 
 function frontendUrl(env) {
@@ -139,7 +126,7 @@ export default {
           });
         }
 
-        const admin = isAdminOpenId(env, profile);
+        const admin = await resolveIsAdmin(env, profile);
         let session = await createSupabaseSessionForWechat(env, profile, admin);
         if (!session) {
           session = mockLocalSession(profile, admin);

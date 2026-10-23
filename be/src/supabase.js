@@ -35,7 +35,7 @@ async function sbFetch(env, path, { method = 'GET', body, prefer } = {}) {
 }
 
 /** 确保用户存在，返回 user id */
-async function ensureUser(env, { openid, unionid, nickname, isAdmin }) {
+async function ensureUser(env, { openid, unionid, nickname, headimgurl, isAdmin }) {
   const email = wxEmail(openid);
   const password = `Wx!${await sha256Short(env.SESSION_SECRET + openid)}`;
 
@@ -80,10 +80,12 @@ async function ensureUser(env, { openid, unionid, nickname, isAdmin }) {
     throw new Error(token.error_description || token.msg || token.error || 'password grant failed');
   }
 
+  const userId = token.user && token.user.id;
+
   // 更新 metadata（管理员标记可能变化）
-  if (token.user && token.user.id) {
+  if (userId) {
     try {
-      await sbFetch(env, `/auth/v1/admin/users/${token.user.id}`, {
+      await sbFetch(env, `/auth/v1/admin/users/${userId}`, {
         method: 'PUT',
         body: {
           user_metadata: {
@@ -96,6 +98,19 @@ async function ensureUser(env, { openid, unionid, nickname, isAdmin }) {
         },
       });
     } catch (_) {}
+
+    // 写入 wechat_identities（需已执行 db/schema.sql）
+    try {
+      await upsertWechatIdentity(env, {
+        openid,
+        unionid,
+        userId,
+        nickname,
+        avatarUrl: headimgurl || null,
+      });
+    } catch (e) {
+      console.log('wechat_identities upsert skipped:', String(e.message || e));
+    }
   }
 
   return {
@@ -103,13 +118,57 @@ async function ensureUser(env, { openid, unionid, nickname, isAdmin }) {
     refresh_token: token.refresh_token,
     expires_at: token.expires_at,
     email: (token.user && token.user.email) || email,
-    user_id: token.user && token.user.id,
+    user_id: userId,
     openid,
     unionid,
     nickname,
     is_admin: !!isAdmin,
     provider: 'wechat',
   };
+}
+
+export async function upsertWechatIdentity(env, { openid, unionid, userId, nickname, avatarUrl }) {
+  // PostgREST upsert on openid
+  await sbFetch(env, '/rest/v1/wechat_identities?on_conflict=openid', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=minimal',
+    body: {
+      openid,
+      unionid: unionid || null,
+      user_id: userId,
+      nickname: nickname || null,
+      avatar_url: avatarUrl || null,
+      last_login_at: new Date().toISOString(),
+    },
+  });
+}
+
+/** DB 白名单 ∪ 环境变量 ADMIN_OPENIDS */
+export async function resolveIsAdmin(env, profile) {
+  const raw = String(env.ADMIN_OPENIDS || '')
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (raw.includes(profile.openid) || (profile.unionid && raw.includes(profile.unionid))) {
+    return true;
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return String(env.MOCK_WECHAT || '') === '1';
+  }
+  try {
+    const parts = [`openid.eq.${encodeURIComponent(profile.openid)}`];
+    if (profile.unionid) parts.push(`unionid.eq.${encodeURIComponent(profile.unionid)}`);
+    const rows = await sbFetch(
+      env,
+      `/rest/v1/wechat_admin_allowlist?or=(${parts.join(',')})&select=id&limit=1`
+    );
+    if (Array.isArray(rows) && rows.length) return true;
+  } catch (e) {
+    console.log('admin allowlist check skipped:', String(e.message || e));
+  }
+  // 无任何白名单配置时：MOCK 默认管理员
+  if (!raw.length) return String(env.MOCK_WECHAT || '') === '1';
+  return false;
 }
 
 async function sha256Short(s) {

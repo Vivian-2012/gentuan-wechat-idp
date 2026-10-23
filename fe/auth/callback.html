@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录完成</title>
+  <style>
+    body{font-family:-apple-system,"PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f6f8;color:#1f2328}
+    .box{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;max-width:360px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1 style="font-size:18px;margin:0 0 8px">正在完成登录…</h1>
+    <p id="msg" style="font-size:13px;color:#6b7280;margin:0">请稍候</p>
+  </div>
+  <script src="../config.js"></script>
+  <script src="../auth.js"></script>
+  <script>
+    (function () {
+      const msg = document.getElementById('msg');
+      try {
+        const hash = location.hash.replace(/^#/, '');
+        const params = new URLSearchParams(hash);
+        const raw = params.get('session');
+        if (!raw) throw new Error('缺少 session');
+        const session = JSON.parse(decodeURIComponent(raw));
+        if (!session || !session.access_token) throw new Error('会话无效');
+        GTAuth.setSession(session);
+        msg.textContent = '成功：' + (session.nickname || session.email || '已登录');
+        setTimeout(() => { location.replace('../app.html'); }, 600);
+      } catch (e) {
+        msg.textContent = '失败：' + (e.message || e);
+        msg.style.color = '#dc2626';
+      }
+    })();
+  </script>
+</body>
+</html>

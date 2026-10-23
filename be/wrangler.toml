@@ -1,0 +1,10 @@
+name = "gentuan-wechat-idp"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Secrets via: wrangler secret put NAME
+# Local: copy ../.env.example → .dev.vars
+
+[vars]
+# Non-secret defaults (override in dashboard / .dev.vars)
+MOCK_WECHAT = "1"

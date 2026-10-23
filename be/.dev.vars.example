@@ -1,0 +1,16 @@
+MOCK_WECHAT=1
+MOCK_OPENID=mock-admin-openid
+PUBLIC_API_URL=http://127.0.0.1:8787
+FRONTEND_URL=http://127.0.0.1:5500
+SESSION_SECRET=dev-secret-change-me
+ADMIN_OPENIDS=mock-admin-openid
+
+# 接真微信时关掉 MOCK，并填写：
+# MOCK_WECHAT=0
+# WECHAT_APP_ID=
+# WECHAT_APP_SECRET=
+
+# 接现有 Supabase 时填写（Service Role 勿提交 git）：
+# SUPABASE_URL=https://jideuebbwvkbfamiiddt.supabase.co
+# SUPABASE_ANON_KEY=
+# SUPABASE_SERVICE_ROLE_KEY=

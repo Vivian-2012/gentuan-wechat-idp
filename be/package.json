@@ -1,0 +1,14 @@
+{
+  "name": "gentuan-wechat-idp-be",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WeChat IdP backend (Cloudflare Worker)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

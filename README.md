@@ -8,7 +8,7 @@
 ## 结构
 
 ```
-fe/     静态前端（可另部署到 GitHub Pages / Cloudflare Pages）
+docs/     静态前端（可另部署到 GitHub Pages / Cloudflare Pages）
 be/     Cloudflare Worker：微信 OAuth + 签发 Supabase 会话
 ```
 
@@ -38,10 +38,10 @@ npm run dev                    # http://127.0.0.1:8787
 
 ### 2. 前端
 
-用任意静态服务器打开 `fe/`，例如：
+用任意静态服务器打开 `docs/`，例如：
 
 ```bash
-cd fe
+cd docs
 python3 -m http.server 5500
 ```
 
@@ -50,7 +50,7 @@ python3 -m http.server 5500
 ## 生产部署
 
 1. **后端**：`cd be && npx wrangler secret put WECHAT_APP_SECRET`（等逐项），再 `npm run deploy`  
-2. **前端**：把 `fe/` 推到**另一个** GitHub repo 的 Pages，或 Cloudflare Pages  
+2. **前端**：把 `docs/` 推到**另一个** GitHub repo 的 Pages，或 Cloudflare Pages  
 3. 微信开放平台配置授权回调域名为 Worker 域名；`redirect_uri` 为  
    `https://<worker>/auth/wechat/callback`  
 4. 开放平台网站应用需主体认证（常见一次性认证费，以微信当前规则为准）
